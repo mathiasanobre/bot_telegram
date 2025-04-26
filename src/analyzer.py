@@ -9,6 +9,9 @@ from typing import Dict, List, Any, Optional, Tuple
 import os
 import json
 from datetime import datetime
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import (
     MIN_ODDS_DIFFERENCE, MIN_PROBABILITY,
@@ -16,7 +19,7 @@ from config import (
     MAX_BACK_ODDS, MIN_LAY_ODDS, TARGET_GREEN_PERCENT,
     MAX_RED_PERCENT, RISK_REWARD_RATIO, CYCLE_SETTINGS
 )
-from utils import (
+from src.utils import (
     setup_logger, load_data, save_data,
     decimal_to_probability, identify_arbitrage,
     calculate_back_profit, calculate_lay_liability,
@@ -382,5 +385,176 @@ class TradingAnalyzer:
             return recommendation
         
         # Estratégia baseada em valor esperado
-        if back_prob >= MIN_PROBABILITY and back_
-(Content truncated due to size limit. Use line ranges to read in chunks)
+        if back_prob >= MIN_PROBABILITY and back_price < lay_price:
+            recommendation['action'] = 'BACK'
+            recommendation['confidence'] = back_prob
+            recommendation['strategy'] = 'Valor Esperado'
+            recommendation['stake_recommendation'] = 50  # Valor base
+            recommendation['potential_profit'] = round(calculate_back_profit(50, back_price), 2)
+            recommendation['max_liability'] = 50  # Stake de Back
+            
+            return recommendation
+        
+        # Estratégia de Lay quando as odds de Lay são baixas
+        lay_prob = decimal_to_probability(lay_price)
+        if lay_prob >= MIN_PROBABILITY:
+            recommendation['action'] = 'LAY'
+            recommendation['confidence'] = lay_prob
+            recommendation['strategy'] = 'Lay de Valor'
+            recommendation['stake_recommendation'] = 50  # Valor base
+            recommendation['potential_profit'] = 50  # Stake de Lay
+            recommendation['max_liability'] = round(calculate_lay_liability(50, lay_price), 2)
+            
+            return recommendation
+        
+        # Sem recomendação clara
+        recommendation['action'] = 'MONITOR'
+        recommendation['strategy'] = 'Aguardar'
+        
+        return recommendation
+    
+    def get_active_opportunities(self, cycle_only: bool = False) -> List[Dict[str, Any]]:
+        """
+        Retorna oportunidades ativas (eventos que ainda não começaram).
+        
+        Args:
+            cycle_only: Se True, retorna apenas oportunidades para o método dos ciclos
+            
+        Returns:
+            Lista de oportunidades ativas
+        """
+        now = int(time.time())
+        active = []
+        
+        for opp in self.opportunities:
+            commence_time = opp.get('commence_time')
+            if commence_time:
+                # Converter string ISO para timestamp
+                try:
+                    dt = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+                    commence_timestamp = int(dt.timestamp())
+                    
+                    if commence_timestamp > now:
+                        # Se cycle_only é True, filtrar apenas oportunidades para o método dos ciclos
+                        if cycle_only:
+                            if opp.get('potential_cycle', False) or 'cycle_info' in opp:
+                                active.append(opp)
+                        else:
+                            active.append(opp)
+                except (ValueError, TypeError):
+                    # Se não conseguir converter, assume que ainda é ativo
+                    if cycle_only:
+                        if opp.get('potential_cycle', False) or 'cycle_info' in opp:
+                            active.append(opp)
+                    else:
+                        active.append(opp)
+        
+        return active
+    
+    def get_cycle_opportunities(self) -> List[Dict[str, Any]]:
+        """
+        Retorna oportunidades específicas para o método dos ciclos.
+        
+        Returns:
+            Lista de oportunidades para o método dos ciclos
+        """
+        return [opp for opp in self.opportunities if 'cycle_info' in opp]
+    
+    def find_games_by_team_names(self, search_terms: List[str]) -> List[Dict[str, Any]]:
+        """
+        Busca jogos que correspondem aos termos de busca nos nomes das equipes.
+        
+        Args:
+            search_terms: Lista de termos para buscar
+            
+        Returns:
+            Lista de jogos que correspondem aos termos de busca
+        """
+        matches = []
+        
+        # Converter termos de busca para minúsculas para comparação case-insensitive
+        search_terms_lower = [term.lower() for term in search_terms]
+        
+        for opp in self.opportunities:
+            home_team = opp.get('home_team', '').lower()
+            away_team = opp.get('away_team', '').lower()
+            team = opp.get('team', '').lower()
+            
+            # Verificar se algum termo de busca está presente nos nomes das equipes
+            if any(term in home_team or term in away_team or term in team for term in search_terms_lower):
+                matches.append(opp)
+        
+        return matches
+    
+    def get_event_by_id(self, event_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Busca um evento específico pelo ID.
+        
+        Args:
+            event_id: ID do evento
+            
+        Returns:
+            Evento encontrado ou None se não encontrado
+        """
+        for opp in self.opportunities:
+            if opp.get('event_id') == event_id:
+                return opp
+        
+        return None
+    
+    def analyze_specific_game(self, event_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Realiza uma análise detalhada de um jogo específico.
+        
+        Args:
+            event_id: ID do evento
+            
+        Returns:
+            Análise detalhada do jogo ou None se não encontrado
+        """
+        event = self.get_event_by_id(event_id)
+        
+        if not event:
+            return None
+        
+        # A análise já está contida no evento, mas podemos adicionar mais informações específicas
+        # ou realizar cálculos adicionais aqui se necessário
+        
+        return event
+    
+    def run_analysis_loop(self, interval: int = 60) -> None:
+        """
+        Executa o loop de análise de dados.
+        
+        Args:
+            interval: Intervalo entre análises em segundos
+        """
+        logger.info("Iniciando loop de análise de dados")
+        
+        try:
+            while True:
+                logger.info(f"Analisando dados às {time.strftime('%H:%M:%S')}")
+                
+                # Recarregar dados
+                self.reload_data()
+                
+                # Analisar oportunidades
+                opportunities = self.analyze_back_lay_opportunities()
+                
+                # Obter oportunidades ativas
+                active = self.get_active_opportunities()
+                cycle_opps = self.get_cycle_opportunities()
+                
+                logger.info(f"Análise concluída. {len(opportunities)} oportunidades encontradas, {len(active)} ativas, {len(cycle_opps)} para o método dos ciclos")
+                logger.info(f"Próxima análise em {interval} segundos")
+                
+                time.sleep(interval)
+        except KeyboardInterrupt:
+            logger.info("Loop de análise interrompido pelo usuário")
+        except Exception as e:
+            logger.error(f"Erro no loop de análise: {e}")
+
+
+if __name__ == "__main__":
+    analyzer = TradingAnalyzer()
+    analyzer.run_analysis_loop()

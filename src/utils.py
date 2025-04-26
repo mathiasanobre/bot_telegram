@@ -480,8 +480,26 @@ def format_cycle_opportunity_message(opportunity: Dict[str, Any]) -> str:
             commence_time = dt.strftime("%d/%m/%Y %H:%M")
         except:
             pass
-    
-    # Criar mensagem
-    message = f"🔄 <b>MÉTODO DOS CICLOS - OPORTUNIDADE</b> 🔄\n\n"
-    message += f"⚽ <b>Evento:</b> {opportunity.get('home_team')} vs {opportunity.get('aw
-(Content truncated due to size limit. Use line ranges to read in chunks)
+        # Criar mensagem
+        message = f"🔄 <b>MÉTODO DOS CICLOS - OPORTUNIDADE</b> 🔄\n\n"
+        message += f"⚽ <b>Evento:</b> {opportunity.get('home_team')} vs {opportunity.get('away_team')}\n"
+        message += f"🕒 <b>Horário:</b> {commence_time}\n"
+        message += f"🏆 <b>Esporte:</b> {opportunity.get('sport')}\n\n"
+
+        if cycle_info.get("type") == "BACK":
+            message += f"✅ <b>OPERAÇÃO: BACK</b>\n"
+            message += f"🎯 <b>Time:</b> {opportunity.get('team')}\n"
+            message += f"📊 <b>Odds:</b> {cycle_info.get('odds', 0):.2f} ({opportunity.get('back', {}).get('bookmaker', '')})\n"
+        else:
+            message += f"❌ <b>OPERAÇÃO: LAY</b>\n"
+            message += f"🎯 <b>Time:</b> {opportunity.get('team')}\n"
+            message += f"📊 <b>Odds:</b> {cycle_info.get('odds', 0):.2f} ({opportunity.get('lay', {}).get('bookmaker', '')})\n"
+
+            message += f"\n💰 <b>Stake Recomendado:</b> {cycle_info.get('stake', 0):.2f}\n"
+            message += f"📈 <b>Green Esperado:</b> {cycle_info.get('green_percent', 0) * 100:.2f}% ({cycle_info.get('green_value', 0):.2f})\n"
+            message += f"📉 <b>Red Máximo:</b> {cycle_info.get('red_percent', 0) * 100:.2f}% ({cycle_info.get('red_value', 0):.2f})\n"
+            message += f"⚖️ <b>Proporção Risco/Retorno:</b> 1:{cycle_info.get('risk_reward_ratio', 0):.1f}\n"
+
+            message += f"\n🔗 <b>ID do Evento:</b> {opportunity.get('event_id', '')}"
+
+        return message

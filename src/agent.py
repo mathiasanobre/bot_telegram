@@ -10,16 +10,19 @@ import os
 import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+import sys
 
-from config import (
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from src.config import (
     UPDATE_INTERVAL, OPPORTUNITIES_FILE,
     LOG_FILE, LOG_LEVEL, TELEGRAM_BOT_TOKEN,
     TELEGRAM_UPDATE_INTERVAL
 )
-from utils import setup_logger, load_data
-from data_collector import DataCollector
-from analyzer import TradingAnalyzer
-from telegram_bot import TelegramBot
+from src.utils import setup_logger, load_data
+from src.data_collector import DataCollector
+from src.analyzer import TradingAnalyzer
+from src.telegram_bot import TelegramBot
 
 # Configurar logger
 logger = setup_logger(LOG_FILE, LOG_LEVEL)
@@ -107,7 +110,7 @@ class TradingAgent:
             try:
                 # Coletar dados
                 self.collector.collect_odds_data()
-                self.collector.collect_live_matches()
+                self.collector.collect_matches_data()
                 
                 # Aguardar próximo ciclo
                 for _ in range(UPDATE_INTERVAL):

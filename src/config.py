@@ -11,12 +11,12 @@ TELEGRAM_BOT_TOKEN = "7880179699:AAEtOghdEiHwCvnFJMKR_X0G1EQMdPfb8QE"
 TELEGRAM_CHAT_ID = None  # Será preenchido automaticamente na primeira mensagem
 
 # URLs base das APIs
-ODDS_API_BASE_URL = "https://api.the-odds-api.com/v4"
+ODDS_API_BASE_URL = "https://api.the-odds-api.com/v4/sports"
 API_FUTEBOL_BASE_URL = "https://api.api-futebol.com.br/v1"
 
 # Configurações de mercados e regiões para The Odds API
 ODDS_API_REGIONS = "eu,uk"  # Regiões para obter odds (eu=Europa, uk=Reino Unido)
-ODDS_API_MARKETS = "h2h,h2h_lay"  # Mercados para obter odds (h2h=moneyline, h2h_lay=lay odds)
+ODDS_API_MARKETS = "h2h,h2h_lay,totals"  # Mercados para obter odds (h2h=moneyline, h2h_lay=lay odds)
 
 # Esportes para monitorar
 SPORTS_TO_MONITOR = [

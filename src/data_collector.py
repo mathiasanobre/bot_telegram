@@ -3,23 +3,22 @@ Módulo para coleta de dados de APIs esportivas.
 Implementa controle de captura para economizar créditos.
 """
 
-import logging
 import time
 import requests
 import json
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 
-from config import (
-    THE_ODDS_API_KEY, API_FUTEBOL_KEY,
-    THE_ODDS_API_URL, API_FUTEBOL_URL,
+from src.config import (
+    ODDS_API_KEY, API_FUTEBOL_KEY,
+    ODDS_API_BASE_URL, API_FUTEBOL_BASE_URL,
     ODDS_DATA_FILE, MATCHES_DATA_FILE,
-    SPORTS, REGIONS, MARKETS,
-    API_REQUEST_INTERVAL, DATA_DIR,
+    SPORTS_TO_MONITOR, ODDS_API_REGIONS, ODDS_API_MARKETS,
+    UPDATE_INTERVAL, DATA_DIR,
     MAX_DAILY_REQUESTS
 )
-from utils import setup_logger, load_data, save_data
+from src.utils import setup_logger, load_data, save_data
 
 # Configurar logger
 logger = setup_logger("../logs/data_collector.log")
@@ -137,8 +136,8 @@ class DataCollector:
         current_time = time.time()
         time_since_last_request = current_time - self.last_request_time
         
-        if time_since_last_request < API_REQUEST_INTERVAL:
-            time_to_wait = API_REQUEST_INTERVAL - time_since_last_request
+        if time_since_last_request < UPDATE_INTERVAL:
+            time_to_wait = UPDATE_INTERVAL - time_since_last_request
             logger.info(f"Aguardando {time_to_wait:.2f}s para respeitar intervalo entre requisições")
             time.sleep(time_to_wait)
         
@@ -173,7 +172,7 @@ class DataCollector:
                 return self.odds_data
         
         # Coletar dados para cada esporte
-        for sport in SPORTS:
+        for sport in SPORTS_TO_MONITOR:
             # Verificar limites de requisições
             if not self._check_rate_limit():
                 break
@@ -181,7 +180,7 @@ class DataCollector:
             logger.info(f"Coletando dados de odds para {sport}")
             
             # Construir URL
-            url = f"{THE_ODDS_API_URL}?apiKey={THE_ODDS_API_KEY}&sport={sport}&regions={','.join(REGIONS)}&markets={','.join(MARKETS)}&oddsFormat=decimal"
+            url = f"{ODDS_API_BASE_URL}/{sport}/odds?regions={','.join(ODDS_API_REGIONS)}&markets={','.join(ODDS_API_MARKETS)}&oddsFormat=decimal&apiKey={ODDS_API_KEY}"
             
             try:
                 response = requests.get(url)
@@ -242,7 +241,7 @@ class DataCollector:
             }
             
             # Partidas ao vivo
-            live_url = f"{API_FUTEBOL_URL}/ao-vivo"
+            live_url = f"{API_FUTEBOL_BASE_URL}/ao-vivo"
             live_response = requests.get(live_url, headers=headers)
             self._update_request_counters()
             
@@ -259,7 +258,7 @@ class DataCollector:
             
             # Partidas do dia
             today = datetime.now().strftime('%Y-%m-%d')
-            upcoming_url = f"{API_FUTEBOL_URL}/partidas/{today}"
+            upcoming_url = f"{API_FUTEBOL_BASE_URL}/partidas/{today}"
             upcoming_response = requests.get(upcoming_url, headers=headers)
             self._update_request_counters()
             

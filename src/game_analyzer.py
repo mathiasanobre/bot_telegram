@@ -7,11 +7,11 @@ import time
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 
-from config import (
+from src.config import (
     ODDS_DATA_FILE, MATCHES_DATA_FILE, OPPORTUNITIES_FILE,
     MAX_BACK_ODDS, MIN_LAY_ODDS
 )
-from utils import (
+from src.utils import (
     setup_logger, load_data, save_data,
     calculate_back_profit, calculate_lay_liability
 )
